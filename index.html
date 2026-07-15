@@ -11,6 +11,7 @@
         <h1>เกม OX 🎮</h1>
         <h2 id="status-text">กำลังเชื่อมต่อ...</h2>
         
+        <!-- กระดานเกม 3x3 -->
         <div id="board" class="board">
             <div class="cell" data-index="0"></div>
             <div class="cell" data-index="1"></div>
@@ -23,9 +24,18 @@
             <div class="cell" data-index="8"></div>
         </div>
 
-        <button id="restart-btn">เริ่มเกมใหม่</button>
+        <button id="restart-btn">เริ่มเกมใหม่ (Host เท่านั้น)</button>
     </div>
 
+    <!-- กล่องข้อความแสดงผลแพ้ชนะ (ซ่อนเป็นค่าเริ่มต้น) -->
+    <div id="win-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h1 id="win-message">ผู้ชนะ!</h1>
+            <button id="close-modal-btn">ตกลง</button>
+        </div>
+    </div>
+
+    <!-- เชื่อมต่อระบบหน้าเว็บกับเซิร์ฟเวอร์ -->
     <script src="/socket.io/socket.io.js"></script>
     <script src="script.js"></script>
 </body>

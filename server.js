@@ -6,43 +6,74 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-// อนุญาตให้แสดงผลไฟล์ HTML และ CSS ในโฟลเดอร์นี้
 app.use(express.static(__dirname));
 
 let players = [];
+let board = ['', '', '', '', '', '', '', '', '']; // ให้เซิร์ฟเวอร์จำกระดานไว้
 
-// เมื่อมีผู้เล่นเปิดหน้าเว็บเข้ามา
+// ฟังก์ชันตรวจสอบการชนะ
+function checkWin() {
+    const winPatterns = [
+        [0,1,2], [3,4,5], [6,7,8], // แนวนอน
+        [0,3,6], [1,4,7], [2,5,8], // แนวตั้ง
+        [0,4,8], [2,4,6]           // แนวทแยง
+    ];
+    for (let pattern of winPatterns) {
+        const [a, b, c] = pattern;
+        // ถ้าช่องมีค่าและเหมือนกันทั้ง 3 ช่อง
+        if (board[a] && board[a] === board[b] && board[a] === board[c]) {
+            return board[a]; // ส่งกลับว่า 'X' หรือ 'O' ชนะ
+        }
+    }
+    // ถ้าไม่มีช่องว่างเหลือเลยแปลว่า เสมอ
+    if (!board.includes('')) return 'Draw'; 
+    return null; // ยังไม่จบเกม
+}
+
 io.on('connection', (socket) => {
-    console.log('มีผู้เล่นเชื่อมต่อ:', socket.id);
-
-    // ระบบจับคู่ผู้เล่น (X และ O)
+    // จัดการผู้เล่นเข้าห้อง
     if (players.length === 0) {
         players.push({ id: socket.id, symbol: 'X' });
-        socket.emit('role', 'X'); // บอกผู้เล่นคนแรกว่าเขาคือ X
+        socket.emit('role', 'X'); // X คือ Host
     } else if (players.length === 1) {
         players.push({ id: socket.id, symbol: 'O' });
-        socket.emit('role', 'O'); // บอกผู้เล่นคนที่สองว่าเขาคือ O
-        
-        // เมื่อครบ 2 คน สั่งให้เกมเริ่ม
+        socket.emit('role', 'O');
         io.emit('startGame', 'เกมเริ่มแล้ว! ตาของ X');
     } else {
-        socket.emit('role', 'Spectator'); // คนที่เข้ามาทีหลังให้เป็นแค่คนดู
+        socket.emit('role', 'Spectator');
     }
 
-    // เมื่อผู้เล่นกดวาง X หรือ O ให้ส่งข้อมูลไปอัปเดตกระดานทุกคน
     socket.on('makeMove', (data) => {
-        io.emit('updateBoard', data);
+        // อัปเดตกระดานบนเซิร์ฟเวอร์
+        if (board[data.index] === '') {
+            board[data.index] = data.symbol;
+            io.emit('updateBoard', data);
+
+            // เช็คผลแพ้ชนะทุกครั้งที่มีการเดิน
+            const winner = checkWin();
+            if (winner) {
+                io.emit('gameOver', winner); // แจ้งทุกคนว่ามีคนชนะแล้ว
+            }
+        }
     });
 
-    // เมื่อผู้เล่นปิดหน้าเว็บหรือเน็ตหลุด
+    socket.on('restartGame', () => {
+        // ตรวจสอบว่าคนที่สั่งเริ่มใหม่คือ X (Host) เท่านั้น
+        const player = players.find(p => p.id === socket.id);
+        if (player && player.symbol === 'X') {
+            board = ['', '', '', '', '', '', '', '', '']; // ล้างกระดานบนเซิร์ฟเวอร์
+            io.emit('resetBoard'); // สั่งให้หน้าจอทุกคนล้างกระดาน
+            io.emit('startGame', 'เริ่มเกมใหม่แล้ว! ตาของ X');
+        }
+    });
+
     socket.on('disconnect', () => {
-        console.log('ผู้เล่นออก:', socket.id);
-        players = players.filter(player => player.id !== socket.id);
+        players = players.filter(p => p.id !== socket.id);
+        board = ['', '', '', '', '', '', '', '', '']; // เคลียร์กระดานเมื่อมีคนออก
         io.emit('playerLeft', 'ผู้เล่นอีกคนออกไปแล้ว กรุณารีเฟรชหน้าเว็บ');
     });
 });
 
-// เปลี่ยนโค้ดตรงฟังช์ชัน listen ด้านล่างสุดเป็นแบบนี้ครับ
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
     console.log(`เซิร์ฟเวอร์รันบนพอร์ต ${PORT}`);
