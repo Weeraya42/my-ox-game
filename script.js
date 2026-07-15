@@ -8,9 +8,9 @@ const modal = document.getElementById('win-modal');
 const winMessage = document.getElementById('win-message');
 const closeModalBtn = document.getElementById('close-modal-btn');
 
-// ระบบเสียงเอฟเฟกต์ (ใช้ลิงก์เสียงฟรี)
-const clickSound = new Audio('https://actions.google.com/sounds/v1/ui/button_click.ogg');
-const winSound = new Audio('https://actions.google.com/sounds/v1/cartoon/trumpet_success.ogg');
+// ระบบเสียงเอฟเฟกต์
+const clickSound = new Audio('sounds/click-sound.mp3'); // ชี้ไปที่โฟลเดอร์ sounds
+const winSound = new Audio('sounds/win-sound.mp3');
 
 let myRole = ''; 
 let gameActive = false; // ตัวแปรคุมว่าตอนนี้กดกระดานได้ไหม
